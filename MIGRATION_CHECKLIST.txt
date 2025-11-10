@@ -1,0 +1,207 @@
+================================================================================
+                    SUPABASE MIGRATION CHECKLIST
+                    Ward Management System
+================================================================================
+
+BEFORE YOU START:
+[ ] Read README_MIGRATION.md
+[ ] Choose migration guide (Quick Start or Detailed)
+[ ] Decide if you need to export old data
+
+================================================================================
+STEP 1: CREATE NEW SUPABASE PROJECT
+================================================================================
+[ ] Go to https://supabase.com/dashboard
+[ ] Click "New Project"
+[ ] Enter project name: _______________________
+[ ] Enter database password: _______________________
+[ ] Select region: _______________________
+[ ] Click "Create new project"
+[ ] Wait for provisioning (1-2 minutes)
+
+================================================================================
+STEP 2: GET CREDENTIALS
+================================================================================
+[ ] Go to Settings → API in new project
+[ ] Copy Project URL: _______________________
+[ ] Copy anon public key: _______________________
+[ ] Save these values securely
+
+================================================================================
+STEP 3: (OPTIONAL) EXPORT OLD DATA
+================================================================================
+[ ] Go to OLD Supabase project
+[ ] Open SQL Editor
+[ ] Run EXPORT_OLD_DATA.sql queries
+[ ] Save exported data to: _______________________
+[ ] Note: Record counts from old project:
+    - Wards: _______
+    - Patients: _______
+    - Staff: _______
+    - Doctors: _______
+    - Patient Forms: _______
+    - OT Forms: _______
+
+================================================================================
+STEP 4: RUN DATABASE MIGRATION
+================================================================================
+[ ] Go to NEW Supabase project
+[ ] Click SQL Editor
+[ ] Click "New Query"
+[ ] Open NEW_SUPABASE_MIGRATION.sql file
+[ ] Copy entire file contents
+[ ] Paste into SQL Editor
+[ ] Click "Run" (or Ctrl+Enter)
+[ ] Wait for completion
+[ ] Verify success message
+
+================================================================================
+STEP 5: VERIFY TABLES CREATED
+================================================================================
+[ ] Go to Table Editor in new project
+[ ] Verify these tables exist:
+    [ ] wards (should have 4 sample records)
+    [ ] ward_patients (empty)
+    [ ] staff (empty)
+    [ ] doctors (should have 4 sample records)
+    [ ] patient_forms (empty)
+    [ ] ot_forms (empty)
+
+================================================================================
+STEP 6: UPDATE ENVIRONMENT VARIABLES
+================================================================================
+[ ] Open .env file in project root
+[ ] Update VITE_SUPABASE_URL with new URL
+[ ] Update VITE_SUPABASE_ANON_KEY with new key
+[ ] Save .env file
+[ ] Verify no extra spaces or quotes
+
+Current .env should look like:
+VITE_SUPABASE_URL=https://your-new-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your_new_anon_key_here
+
+================================================================================
+STEP 7: (OPTIONAL) IMPORT OLD DATA
+================================================================================
+[ ] Go to Table Editor in new project
+[ ] For each table with data to import:
+    [ ] Click table name
+    [ ] Click "Insert" → "Import data via spreadsheet"
+    [ ] Upload CSV file
+    [ ] Map columns
+    [ ] Import
+
+Import order (important for foreign keys):
+1. [ ] wards
+2. [ ] doctors
+3. [ ] ward_patients
+4. [ ] staff
+5. [ ] patient_forms
+6. [ ] ot_forms
+
+================================================================================
+STEP 8: RESTART DEVELOPMENT SERVER
+================================================================================
+[ ] Stop current dev server (Ctrl+C)
+[ ] Run: npm run dev
+[ ] Wait for server to start
+[ ] Note the local URL: _______________________
+
+================================================================================
+STEP 9: VERIFY CONNECTION
+================================================================================
+[ ] Open browser to http://localhost:5173
+[ ] Press F12 to open Developer Tools
+[ ] Go to Console tab
+[ ] Verify you see:
+    [ ] "Supabase URL: https://your-new-project-id.supabase.co"
+    [ ] "Supabase Key exists: true"
+[ ] No error messages in console
+
+================================================================================
+STEP 10: TEST FUNCTIONALITY
+================================================================================
+[ ] Test viewing wards (should see 4 sample wards)
+[ ] Test adding a new ward
+[ ] Test editing a ward
+[ ] Test viewing doctors (should see 4 sample doctors)
+[ ] Test adding a patient
+[ ] Test patient forms
+[ ] Test all main features work
+
+================================================================================
+STEP 11: VERIFY DATA MIGRATION (IF APPLICABLE)
+================================================================================
+[ ] Compare record counts with old project:
+    - Wards: Old: _____ New: _____
+    - Patients: Old: _____ New: _____
+    - Staff: Old: _____ New: _____
+    - Doctors: Old: _____ New: _____
+    - Patient Forms: Old: _____ New: _____
+    - OT Forms: Old: _____ New: _____
+[ ] Spot check a few records for accuracy
+
+================================================================================
+FINAL VERIFICATION
+================================================================================
+[ ] All tables created successfully
+[ ] Sample data visible
+[ ] Application connects without errors
+[ ] Can perform CRUD operations
+[ ] Forms functionality works
+[ ] No console errors
+[ ] Data migrated correctly (if applicable)
+
+================================================================================
+POST-MIGRATION TASKS
+================================================================================
+[ ] Update project documentation with new project ID
+[ ] Save database password securely
+[ ] Set up regular backups
+[ ] Configure production RLS policies (if deploying)
+[ ] Set up monitoring/alerts
+[ ] Update team members with new credentials
+[ ] Archive old project (don't delete yet!)
+
+================================================================================
+TROUBLESHOOTING NOTES
+================================================================================
+
+Issue encountered: _______________________
+Solution: _______________________
+
+Issue encountered: _______________________
+Solution: _______________________
+
+Issue encountered: _______________________
+Solution: _______________________
+
+================================================================================
+MIGRATION DETAILS
+================================================================================
+
+Old Project ID: ihgxnminfknrirszrvsq
+New Project ID: _______________________
+Migration Date: _______________________
+Migrated By: _______________________
+Time Taken: _______________________
+Data Migrated: [ ] Yes  [ ] No
+Issues Encountered: [ ] Yes  [ ] No
+
+Notes:
+_______________________
+_______________________
+_______________________
+
+================================================================================
+                        MIGRATION COMPLETE! 🎉
+================================================================================
+
+Next Steps:
+1. Start using the application with new Supabase project
+2. Monitor performance and usage
+3. Keep old project as backup for 30 days
+4. Update any external integrations
+5. Celebrate! ✨
+
+================================================================================

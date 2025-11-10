@@ -6,6 +6,8 @@ import Dashboard from './pages/Dashboard';
 import Wards from './pages/Wards';
 import Patients from './pages/Patients';
 import Staff from './pages/Staff';
+import WardTransfers from './pages/WardTransfers';
+import Billing from './pages/Billing';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
             <Route path="/wards" element={<Wards />} />
             <Route path="/patients" element={<Patients />} />
             <Route path="/staff" element={<Staff />} />
+            <Route path="/transfers" element={<WardTransfers />} />
+            <Route path="/billing" element={<Billing />} />
           </Routes>
         </Layout>
       </Router>

@@ -3,14 +3,16 @@ import { useApp } from '../context/AppContext';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PatientFormsModal from '../components/PatientFormsModal';
-import { Plus, Edit2, Trash2, UserCheck, Search, Filter, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, UserCheck, Search, Filter, FileText, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 
 const Patients = () => {
-  const { patients, wards, doctors, patientForms, otForms, addPatient, updatePatient, deletePatient, dischargePatient, addPatientForm, addOtForm, fetchPatientForms, fetchOtForms, loading } = useApp();
+  const { patients, wards, doctors, patientForms, otForms, addPatient, updatePatient, deletePatient, dischargePatient, addPatientForm, addOtForm, fetchPatientForms, fetchOtForms, createWardTransfer, loading } = useApp();
   const [submitting, setSubmitting] = useState(false);
   const [selectedPatientForForms, setSelectedPatientForForms] = useState(null);
   const [isFormsModalOpen, setIsFormsModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [selectedPatientForTransfer, setSelectedPatientForTransfer] = useState(null);
   
   // Fetch patient forms and OT forms on mount
   useEffect(() => {
@@ -36,6 +38,15 @@ const Patients = () => {
     doctor: '',
     emergencyContact: '',
     bloodGroup: ''
+  });
+
+  const [transferFormData, setTransferFormData] = useState({
+    toWardId: '',
+    toBedNumber: '',
+    transferReason: '',
+    transferredBy: '',
+    transferredByRole: 'Nurse',
+    notes: ''
   });
 
   const handleOpenModal = (patient = null) => {
@@ -128,6 +139,60 @@ const Patients = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleTransferChange = (e) => {
+    setTransferFormData({
+      ...transferFormData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleOpenTransferModal = (patient) => {
+    setSelectedPatientForTransfer(patient);
+    setTransferFormData({
+      toWardId: '',
+      toBedNumber: '',
+      transferReason: '',
+      transferredBy: '',
+      transferredByRole: 'Nurse',
+      notes: ''
+    });
+    setIsTransferModalOpen(true);
+  };
+
+  const handleSubmitTransfer = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const transferData = {
+        patientId: selectedPatientForTransfer.id,
+        fromWardId: selectedPatientForTransfer.wardId,
+        fromBedNumber: selectedPatientForTransfer.bedNumber,
+        toWardId: transferFormData.toWardId,
+        toBedNumber: transferFormData.toBedNumber,
+        transferReason: transferFormData.transferReason,
+        transferredBy: transferFormData.transferredBy,
+        transferredByRole: transferFormData.transferredByRole,
+        status: 'Pending',
+        notes: transferFormData.notes
+      };
+
+      const result = await createWardTransfer(transferData);
+      
+      if (result.success) {
+        setIsTransferModalOpen(false);
+        setSelectedPatientForTransfer(null);
+        alert('Transfer request created successfully!');
+      } else {
+        alert('Error: ' + result.error);
+      }
+    } catch (error) {
+      alert('An error occurred: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSaveForm = async (formData) => {
@@ -287,13 +352,22 @@ const Patients = () => {
                           <FileText className="w-4 h-4" />
                         </button>
                         {patient.status !== 'Discharged' && (
-                          <button
-                            onClick={() => handleDischarge(patient.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Discharge Patient"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleOpenTransferModal(patient)}
+                              className="text-purple-600 hover:text-purple-900"
+                              title="Transfer Ward"
+                            >
+                              <ArrowRightLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDischarge(patient.id)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Discharge Patient"
+                            >
+                              <UserCheck className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => handleOpenModal(patient)}
@@ -514,6 +588,138 @@ const Patients = () => {
         onSaveForm={handleSaveForm}
         existingForms={[...patientForms, ...otForms]}
       />
+
+      {/* Transfer Patient Modal */}
+      <Modal
+        isOpen={isTransferModalOpen}
+        onClose={() => {
+          setIsTransferModalOpen(false);
+          setSelectedPatientForTransfer(null);
+        }}
+        title="Transfer Patient to Another Ward"
+        size="lg"
+      >
+        {selectedPatientForTransfer && (
+          <form onSubmit={handleSubmitTransfer} className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-medium text-gray-900">Patient Information</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                <strong>{selectedPatientForTransfer.name}</strong> • {selectedPatientForTransfer.age} years • {selectedPatientForTransfer.gender}
+              </p>
+              <p className="text-sm text-gray-600">
+                Current Ward: <strong>{wards.find(w => w.id === selectedPatientForTransfer.wardId)?.name || 'N/A'}</strong> • Bed: <strong>{selectedPatientForTransfer.bedNumber}</strong>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Transfer to Ward</label>
+                <select
+                  name="toWardId"
+                  value={transferFormData.toWardId}
+                  onChange={handleTransferChange}
+                  className="input-field"
+                  required
+                >
+                  <option value="">Select Ward</option>
+                  {wards.filter(w => w.id !== selectedPatientForTransfer.wardId).map(ward => (
+                    <option key={ward.id} value={ward.id}>
+                      {ward.name} ({ward.availableBeds} beds available)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">New Bed Number</label>
+                <input
+                  type="text"
+                  name="toBedNumber"
+                  value={transferFormData.toBedNumber}
+                  onChange={handleTransferChange}
+                  className="input-field"
+                  required
+                  placeholder="e.g., B-101"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Transfer Reason</label>
+              <textarea
+                name="transferReason"
+                value={transferFormData.transferReason}
+                onChange={handleTransferChange}
+                className="input-field"
+                rows="3"
+                required
+                placeholder="Describe the reason for transfer..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Transferred By</label>
+                <input
+                  type="text"
+                  name="transferredBy"
+                  value={transferFormData.transferredBy}
+                  onChange={handleTransferChange}
+                  className="input-field"
+                  required
+                  placeholder="Your name"
+                />
+              </div>
+              <div>
+                <label className="label">Role</label>
+                <select
+                  name="transferredByRole"
+                  value={transferFormData.transferredByRole}
+                  onChange={handleTransferChange}
+                  className="input-field"
+                  required
+                >
+                  <option value="Nurse">Nurse</option>
+                  <option value="Doctor">Doctor</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Additional Notes (Optional)</label>
+              <textarea
+                name="notes"
+                value={transferFormData.notes}
+                onChange={handleTransferChange}
+                className="input-field"
+                rows="2"
+                placeholder="Any additional information..."
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsTransferModalOpen(false);
+                  setSelectedPatientForTransfer(null);
+                }}
+                className="btn-secondary"
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn-primary"
+                disabled={submitting}
+              >
+                {submitting ? 'Creating...' : 'Create Transfer Request'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };

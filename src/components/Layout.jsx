@@ -7,7 +7,9 @@ import {
   UserCog, 
   Menu, 
   X,
-  Activity
+  Activity,
+  ArrowRightLeft,
+  Receipt
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import CriticalPatientsAlert from './CriticalPatientsAlert';
@@ -25,6 +27,8 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Wards', href: '/wards', icon: Building2 },
     { name: 'Patients', href: '/patients', icon: Users },
+    { name: 'Ward Transfers', href: '/transfers', icon: ArrowRightLeft },
+    { name: 'Billing', href: '/billing', icon: Receipt },
     { name: 'Staff', href: '/staff', icon: UserCog },
   ];
 

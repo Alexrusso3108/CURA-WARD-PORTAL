@@ -2,6 +2,7 @@
 // Maps form types to their image files in the ward monitoring folder
 
 import { otForms } from './otForms';
+import { activityChartForms } from './activityChartForms';
 
 export const monitoringForms = [
   {
@@ -134,11 +135,12 @@ export const formCategories = [
   'Consent',
   'Documentation',
   'Billing',
-  'OT'
+  'OT',
+  'Activity'
 ];
 
 // Combined forms array
-export const allForms = [...monitoringForms, ...billingForms, ...otForms];
+export const allForms = [...monitoringForms, ...billingForms, ...otForms, ...activityChartForms];
 
 export const getFormById = (formId) => {
   return allForms.find(form => form.id === formId);

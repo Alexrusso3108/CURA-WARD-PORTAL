@@ -40,6 +40,10 @@ export const AppProvider = ({ children }) => {
   const [doctors, setDoctors] = useState([]);
   const [patientForms, setPatientForms] = useState([]);
   const [otForms, setOtForms] = useState([]);
+  const [wardTransfers, setWardTransfers] = useState([]);
+  const [bills, setBills] = useState([]);
+  const [billItems, setBillItems] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -68,7 +72,7 @@ export const AppProvider = ({ children }) => {
   // Fetch wards
   const fetchWards = async () => {
     const { data, error } = await supabase
-      .from('wards')
+      .from('hospital_wards')
       .select('*')
       .order('created_at', { ascending: true });
     
@@ -114,7 +118,7 @@ export const AppProvider = ({ children }) => {
     try {
       const wardData = toSnakeCase(ward);
       const { data, error } = await supabase
-        .from('wards')
+        .from('hospital_wards')
         .insert([wardData])
         .select()
         .single();
@@ -132,7 +136,7 @@ export const AppProvider = ({ children }) => {
     try {
       const wardData = toSnakeCase(updatedWard);
       const { data, error } = await supabase
-        .from('wards')
+        .from('hospital_wards')
         .update(wardData)
         .eq('id', id)
         .select()
@@ -150,7 +154,7 @@ export const AppProvider = ({ children }) => {
   const deleteWard = async (id) => {
     try {
       const { error } = await supabase
-        .from('wards')
+        .from('hospital_wards')
         .delete()
         .eq('id', id);
       
@@ -168,7 +172,7 @@ export const AppProvider = ({ children }) => {
     try {
       // Get current ward data
       const { data: wardData, error: fetchError } = await supabase
-        .from('wards')
+        .from('hospital_wards')
         .select('*')
         .eq('id', wardId)
         .single();
@@ -183,7 +187,7 @@ export const AppProvider = ({ children }) => {
       
       // Update ward
       const { data, error } = await supabase
-        .from('wards')
+        .from('hospital_wards')
         .update({ 
           occupied_beds: occupiedBeds,
           available_beds: availableBeds
@@ -386,7 +390,7 @@ export const AppProvider = ({ children }) => {
   // Patient Forms operations
   const fetchPatientForms = async () => {
     const { data, error } = await supabase
-      .from('patient_forms')
+      .from('ward_patient_forms')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -398,7 +402,7 @@ export const AppProvider = ({ children }) => {
     try {
       const formRecord = toSnakeCase(formData);
       const { data, error } = await supabase
-        .from('patient_forms')
+        .from('ward_patient_forms')
         .insert([formRecord])
         .select()
         .single();
@@ -415,7 +419,7 @@ export const AppProvider = ({ children }) => {
   // OT Forms operations
   const fetchOtForms = async () => {
     const { data, error } = await supabase
-      .from('ot_forms')
+      .from('ward_ot_forms')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -427,7 +431,7 @@ export const AppProvider = ({ children }) => {
     try {
       const formRecord = toSnakeCase(formData);
       const { data, error } = await supabase
-        .from('ot_forms')
+        .from('ward_ot_forms')
         .insert([formRecord])
         .select()
         .single();
@@ -441,6 +445,394 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Ward Transfer operations
+  const fetchWardTransfers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ward_transfers')
+        .select('*')
+        .order('transfer_date', { ascending: false });
+      
+      if (error) throw error;
+      setWardTransfers(data.map(toCamelCase));
+      return { success: true };
+    } catch (err) {
+      console.error('Error fetching ward transfers:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const createWardTransfer = async (transferData) => {
+    try {
+      const transferRecord = {
+        ...toSnakeCase(transferData),
+        transfer_date: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .from('ward_transfers')
+        .insert([transferRecord])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      setWardTransfers([toCamelCase(data), ...wardTransfers]);
+      return { success: true, data: toCamelCase(data) };
+    } catch (err) {
+      console.error('Error creating ward transfer:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const completeWardTransfer = async (transferId, patientId, toWardId, toBedNumber) => {
+    try {
+      // Update transfer status to Completed
+      const { data: transferData, error: transferError } = await supabase
+        .from('ward_transfers')
+        .update({ 
+          status: 'Completed',
+          approval_date: new Date().toISOString()
+        })
+        .eq('id', transferId)
+        .select()
+        .single();
+      
+      if (transferError) throw transferError;
+
+      // Get the transfer details to update ward bed counts
+      const transfer = toCamelCase(transferData);
+      
+      // Update patient's ward and bed
+      const { data: patientData, error: patientError } = await supabase
+        .from('ward_patients')
+        .update({
+          ward_id: toWardId,
+          bed_number: toBedNumber
+        })
+        .eq('id', patientId)
+        .select()
+        .single();
+      
+      if (patientError) throw patientError;
+
+      // Update ward bed counts
+      if (transfer.fromWardId) {
+        await updateWardBedCount(transfer.fromWardId, false); // Decrease old ward
+      }
+      await updateWardBedCount(toWardId, true); // Increase new ward
+
+      // Update local state
+      setWardTransfers(wardTransfers.map(t => 
+        t.id === transferId ? transfer : t
+      ));
+      setPatients(patients.map(p => 
+        p.id === patientId ? toCamelCase(patientData) : p
+      ));
+
+      return { success: true, data: transfer };
+    } catch (err) {
+      console.error('Error completing ward transfer:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const updateWardTransferStatus = async (transferId, status, approvedBy = null) => {
+    try {
+      const updateData = { 
+        status,
+        ...(approvedBy && { 
+          approved_by: approvedBy,
+          approval_date: new Date().toISOString()
+        })
+      };
+
+      const { data, error } = await supabase
+        .from('ward_transfers')
+        .update(updateData)
+        .eq('id', transferId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setWardTransfers(wardTransfers.map(t => 
+        t.id === transferId ? toCamelCase(data) : t
+      ));
+      
+      return { success: true, data: toCamelCase(data) };
+    } catch (err) {
+      console.error('Error updating transfer status:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteWardTransfer = async (transferId) => {
+    try {
+      const { error } = await supabase
+        .from('ward_transfers')
+        .delete()
+        .eq('id', transferId);
+      
+      if (error) throw error;
+      
+      setWardTransfers(wardTransfers.filter(t => t.id !== transferId));
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting ward transfer:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Billing operations
+  const fetchBills = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ward_bills')
+        .select('*')
+        .order('bill_date', { ascending: false });
+      
+      if (error) throw error;
+      setBills(data.map(toCamelCase));
+      return { success: true };
+    } catch (err) {
+      console.error('Error fetching bills:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const fetchBillItems = async (billId) => {
+    try {
+      const { data, error } = await supabase
+        .from('ward_bill_items')
+        .select('*')
+        .eq('bill_id', billId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return { success: true, data: data.map(toCamelCase) };
+    } catch (err) {
+      console.error('Error fetching bill items:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ward_payments')
+        .select('*')
+        .order('payment_date', { ascending: false });
+      
+      if (error) throw error;
+      setPayments(data.map(toCamelCase));
+      return { success: true };
+    } catch (err) {
+      console.error('Error fetching payments:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const createBill = async (billData, items) => {
+    try {
+      // Generate bill number
+      const { data: billNumberData } = await supabase.rpc('generate_bill_number');
+      const billNumber = billNumberData || `BILL-${Date.now()}`;
+
+      // Calculate totals
+      const subtotal = items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+      const taxAmount = (subtotal * parseFloat(billData.taxPercentage || 0)) / 100;
+      const discountAmount = (subtotal * parseFloat(billData.discountPercentage || 0)) / 100;
+      const totalAmount = subtotal + taxAmount - discountAmount;
+
+      const billRecord = {
+        ...toSnakeCase(billData),
+        bill_number: billNumber,
+        subtotal,
+        tax_amount: taxAmount,
+        discount_amount: discountAmount,
+        total_amount: totalAmount,
+        balance_amount: totalAmount,
+        paid_amount: 0
+      };
+
+      // Insert bill
+      const { data: bill, error: billError } = await supabase
+        .from('ward_bills')
+        .insert([billRecord])
+        .select()
+        .single();
+      
+      if (billError) throw billError;
+
+      // Insert bill items
+      const itemRecords = items.map(item => ({
+        ...toSnakeCase(item),
+        bill_id: bill.id
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('ward_bill_items')
+        .insert(itemRecords);
+      
+      if (itemsError) throw itemsError;
+
+      setBills([toCamelCase(bill), ...bills]);
+      return { success: true, data: toCamelCase(bill) };
+    } catch (err) {
+      console.error('Error creating bill:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const updateBill = async (billId, billData, items) => {
+    try {
+      // Calculate totals
+      const subtotal = items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+      const taxAmount = (subtotal * parseFloat(billData.taxPercentage || 0)) / 100;
+      const discountAmount = (subtotal * parseFloat(billData.discountPercentage || 0)) / 100;
+      const totalAmount = subtotal + taxAmount - discountAmount;
+
+      const currentBill = bills.find(b => b.id === billId);
+      const balanceAmount = totalAmount - (currentBill?.paidAmount || 0);
+
+      const billRecord = {
+        ...toSnakeCase(billData),
+        subtotal,
+        tax_amount: taxAmount,
+        discount_amount: discountAmount,
+        total_amount: totalAmount,
+        balance_amount: balanceAmount
+      };
+
+      // Update bill
+      const { data: bill, error: billError } = await supabase
+        .from('ward_bills')
+        .update(billRecord)
+        .eq('id', billId)
+        .select()
+        .single();
+      
+      if (billError) throw billError;
+
+      // Delete existing items
+      await supabase
+        .from('ward_bill_items')
+        .delete()
+        .eq('bill_id', billId);
+
+      // Insert new items
+      const itemRecords = items.map(item => ({
+        ...toSnakeCase(item),
+        bill_id: billId
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('ward_bill_items')
+        .insert(itemRecords);
+      
+      if (itemsError) throw itemsError;
+
+      setBills(bills.map(b => b.id === billId ? toCamelCase(bill) : b));
+      return { success: true, data: toCamelCase(bill) };
+    } catch (err) {
+      console.error('Error updating bill:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteBill = async (billId) => {
+    try {
+      const { error } = await supabase
+        .from('ward_bills')
+        .delete()
+        .eq('id', billId);
+      
+      if (error) throw error;
+      
+      setBills(bills.filter(b => b.id !== billId));
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting bill:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const addPayment = async (paymentData) => {
+    try {
+      // Generate payment number
+      const { data: paymentNumberData } = await supabase.rpc('generate_payment_number');
+      const paymentNumber = paymentNumberData || `PAY-${Date.now()}`;
+
+      const paymentRecord = {
+        ...toSnakeCase(paymentData),
+        payment_number: paymentNumber
+      };
+
+      // Insert payment
+      const { data: payment, error: paymentError } = await supabase
+        .from('ward_payments')
+        .insert([paymentRecord])
+        .select()
+        .single();
+      
+      if (paymentError) throw paymentError;
+
+      // Update bill paid amount and balance
+      const bill = bills.find(b => b.id === paymentData.billId);
+      if (bill) {
+        const newPaidAmount = parseFloat(bill.paidAmount) + parseFloat(paymentData.amount);
+        const newBalanceAmount = parseFloat(bill.totalAmount) - newPaidAmount;
+        
+        let paymentStatus = 'Unpaid';
+        if (newBalanceAmount <= 0) {
+          paymentStatus = 'Paid';
+        } else if (newPaidAmount > 0) {
+          paymentStatus = 'Partially Paid';
+        }
+
+        const { data: updatedBill, error: billError } = await supabase
+          .from('ward_bills')
+          .update({
+            paid_amount: newPaidAmount,
+            balance_amount: newBalanceAmount,
+            payment_status: paymentStatus
+          })
+          .eq('id', paymentData.billId)
+          .select()
+          .single();
+        
+        if (billError) throw billError;
+
+        setBills(bills.map(b => b.id === paymentData.billId ? toCamelCase(updatedBill) : b));
+      }
+
+      setPayments([toCamelCase(payment), ...payments]);
+      return { success: true, data: toCamelCase(payment) };
+    } catch (err) {
+      console.error('Error adding payment:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  const finalizeBill = async (billId) => {
+    try {
+      const { data, error } = await supabase
+        .from('ward_bills')
+        .update({ status: 'Finalized' })
+        .eq('id', billId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setBills(bills.map(b => b.id === billId ? toCamelCase(data) : b));
+      return { success: true, data: toCamelCase(data) };
+    } catch (err) {
+      console.error('Error finalizing bill:', err);
+      return { success: false, error: err.message };
+    }
+  };
+
   const value = {
     wards,
     patients,
@@ -448,6 +840,10 @@ export const AppProvider = ({ children }) => {
     doctors,
     patientForms,
     otForms,
+    wardTransfers,
+    bills,
+    billItems,
+    payments,
     loading,
     error,
     addWard,
@@ -464,6 +860,19 @@ export const AppProvider = ({ children }) => {
     fetchPatientForms,
     addOtForm,
     fetchOtForms,
+    fetchWardTransfers,
+    createWardTransfer,
+    completeWardTransfer,
+    updateWardTransferStatus,
+    deleteWardTransfer,
+    fetchBills,
+    fetchBillItems,
+    fetchPayments,
+    createBill,
+    updateBill,
+    deleteBill,
+    addPayment,
+    finalizeBill,
     refreshData: fetchAllData,
   };
 

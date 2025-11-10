@@ -1,0 +1,391 @@
+================================================================================
+                    DATABASE SCHEMA DIAGRAM
+                    Ward Management System
+================================================================================
+
+LEGEND:
+  PK = Primary Key
+  FK = Foreign Key
+  UK = Unique Key
+  NN = Not Null
+
+================================================================================
+                         TABLE RELATIONSHIPS
+================================================================================
+
+┌─────────────────┐
+│     WARDS       │
+│─────────────────│
+│ id (PK)         │──┐
+│ name (NN)       │  │
+│ floor (NN)      │  │
+│ total_beds      │  │
+│ occupied_beds   │  │
+│ available_beds  │  │
+│ department      │  │
+│ nurse_in_charge │  │
+│ created_at      │  │
+│ updated_at      │  │
+└─────────────────┘  │
+                     │
+                     │ Referenced by
+                     │ ward_patients.ward_id
+                     │
+                     ↓
+┌─────────────────────┐
+│   WARD_PATIENTS     │
+│─────────────────────│
+│ id (PK)             │──┐
+│ name (NN)           │  │
+│ age (NN)            │  │
+│ gender (NN)         │  │
+│ ward_id (FK)        │  │
+│ bed_number (NN)     │  │
+│ admission_date      │  │
+│ discharge_date      │  │
+│ diagnosis (NN)      │  │
+│ status (NN)         │  │
+│ doctor (NN)         │  │
+│ emergency_contact   │  │
+│ blood_group (NN)    │  │
+│ created_at          │  │
+│ updated_at          │  │
+└─────────────────────┘  │
+                         │
+                         │ Referenced by
+                         │ patient_forms.patient_id
+                         │ ot_forms.patient_id
+                         │
+         ┌───────────────┴───────────────┐
+         │                               │
+         ↓                               ↓
+┌──────────────────┐            ┌──────────────────┐
+│  PATIENT_FORMS   │            │    OT_FORMS      │
+│──────────────────│            │──────────────────│
+│ id (PK)          │            │ id (PK)          │
+│ patient_id (FK)  │            │ patient_id (FK)  │
+│ form_type (NN)   │            │ form_type (NN)   │
+│ form_name (NN)   │            │ form_name (NN)   │
+│ filled_by (NN)   │            │ filled_by (NN)   │
+│ filled_by_role   │            │ filled_by_role   │
+│ form_data (JSONB)│            │ form_data (JSONB)│
+│ file_url         │            │ file_url         │
+│ notes            │            │ notes            │
+│ status (NN)      │            │ status (NN)      │
+│ created_at       │            │ created_at       │
+│ updated_at       │            │ updated_at       │
+└──────────────────┘            └──────────────────┘
+
+
+┌─────────────────┐            ┌─────────────────┐
+│     STAFF       │            │    DOCTORS      │
+│─────────────────│            │─────────────────│
+│ id (PK)         │            │ id (PK)         │
+│ name (NN)       │            │ name (NN)       │
+│ role (NN)       │            │ specialization  │
+│ department (NN) │            │ department (NN) │
+│ specialization  │            │ phone (NN)      │
+│ phone (NN)      │            │ email (UK, NN)  │
+│ email (UK, NN)  │            │ status (NN)     │
+│ shift (NN)      │            │ created_at      │
+│ status (NN)     │            │ updated_at      │
+│ created_at      │            └─────────────────┘
+│ updated_at      │
+└─────────────────┘
+
+Note: STAFF and DOCTORS are independent tables with no foreign key relationships
+
+================================================================================
+                         DETAILED TABLE SCHEMAS
+================================================================================
+
+TABLE: wards
+────────────────────────────────────────────────────────────────────────────
+Column              Type                        Constraints
+────────────────────────────────────────────────────────────────────────────
+id                  UUID                        PRIMARY KEY, DEFAULT gen_random_uuid()
+name                TEXT                        NOT NULL
+floor               INTEGER                     NOT NULL
+total_beds          INTEGER                     NOT NULL
+occupied_beds       INTEGER                     NOT NULL, DEFAULT 0
+available_beds      INTEGER                     NOT NULL
+department          TEXT                        NOT NULL
+nurse_in_charge     TEXT                        NOT NULL
+created_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+updated_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+
+Indexes:
+  - idx_wards_department ON (department)
+  - idx_wards_floor ON (floor)
+
+Sample Data: 4 records (General Ward A, ICU Ward, Pediatric Ward, Surgical Ward)
+
+────────────────────────────────────────────────────────────────────────────
+
+TABLE: ward_patients
+────────────────────────────────────────────────────────────────────────────
+Column              Type                        Constraints
+────────────────────────────────────────────────────────────────────────────
+id                  UUID                        PRIMARY KEY, DEFAULT gen_random_uuid()
+name                TEXT                        NOT NULL
+age                 INTEGER                     NOT NULL
+gender              TEXT                        NOT NULL
+ward_id             UUID                        FOREIGN KEY → wards(id) ON DELETE SET NULL
+bed_number          TEXT                        NOT NULL
+admission_date      TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+discharge_date      TIMESTAMP WITH TIME ZONE    NULL
+diagnosis           TEXT                        NOT NULL
+status              TEXT                        NOT NULL, DEFAULT 'Admitted'
+doctor              TEXT                        NOT NULL
+emergency_contact   TEXT                        NOT NULL
+blood_group         TEXT                        NOT NULL
+created_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+updated_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+
+Indexes:
+  - idx_ward_patients_ward_id ON (ward_id)
+  - idx_ward_patients_status ON (status)
+  - idx_ward_patients_admission_date ON (admission_date DESC)
+
+Sample Data: None (empty table)
+
+────────────────────────────────────────────────────────────────────────────
+
+TABLE: staff
+────────────────────────────────────────────────────────────────────────────
+Column              Type                        Constraints
+────────────────────────────────────────────────────────────────────────────
+id                  UUID                        PRIMARY KEY, DEFAULT gen_random_uuid()
+name                TEXT                        NOT NULL
+role                TEXT                        NOT NULL
+department          TEXT                        NOT NULL
+specialization      TEXT                        NOT NULL
+phone               TEXT                        NOT NULL
+email               TEXT                        NOT NULL, UNIQUE
+shift               TEXT                        NOT NULL
+status              TEXT                        NOT NULL, DEFAULT 'Active'
+created_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+updated_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+
+Indexes:
+  - idx_staff_role ON (role)
+  - idx_staff_department ON (department)
+  - idx_staff_status ON (status)
+
+Sample Data: None (empty table)
+
+────────────────────────────────────────────────────────────────────────────
+
+TABLE: doctors
+────────────────────────────────────────────────────────────────────────────
+Column              Type                        Constraints
+────────────────────────────────────────────────────────────────────────────
+id                  UUID                        PRIMARY KEY, DEFAULT gen_random_uuid()
+name                TEXT                        NOT NULL
+specialization      TEXT                        NOT NULL
+department          TEXT                        NOT NULL
+phone               TEXT                        NOT NULL
+email               TEXT                        NOT NULL, UNIQUE
+status              TEXT                        NOT NULL, DEFAULT 'Active'
+created_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+updated_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+
+Indexes:
+  - idx_doctors_specialization ON (specialization)
+  - idx_doctors_department ON (department)
+  - idx_doctors_status ON (status)
+
+Sample Data: 4 records (Dr. John Smith, Dr. Sarah Williams, Dr. Michael Brown, Dr. Emily Davis)
+
+────────────────────────────────────────────────────────────────────────────
+
+TABLE: patient_forms
+────────────────────────────────────────────────────────────────────────────
+Column              Type                        Constraints
+────────────────────────────────────────────────────────────────────────────
+id                  UUID                        PRIMARY KEY, DEFAULT gen_random_uuid()
+patient_id          UUID                        FOREIGN KEY → ward_patients(id) ON DELETE CASCADE
+form_type           TEXT                        NOT NULL
+form_name           TEXT                        NOT NULL
+filled_by           TEXT                        NOT NULL
+filled_by_role      TEXT                        NOT NULL
+form_data           JSONB                       NULL
+file_url            TEXT                        NULL
+notes               TEXT                        NULL
+status              TEXT                        NOT NULL, DEFAULT 'Draft'
+created_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+updated_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+
+Indexes:
+  - idx_patient_forms_patient_id ON (patient_id)
+  - idx_patient_forms_form_type ON (form_type)
+  - idx_patient_forms_status ON (status)
+  - idx_patient_forms_created_at ON (created_at DESC)
+
+Sample Data: None (empty table)
+
+────────────────────────────────────────────────────────────────────────────
+
+TABLE: ot_forms
+────────────────────────────────────────────────────────────────────────────
+Column              Type                        Constraints
+────────────────────────────────────────────────────────────────────────────
+id                  UUID                        PRIMARY KEY, DEFAULT gen_random_uuid()
+patient_id          UUID                        FOREIGN KEY → ward_patients(id) ON DELETE CASCADE
+form_type           TEXT                        NOT NULL
+form_name           TEXT                        NOT NULL
+filled_by           TEXT                        NOT NULL
+filled_by_role      TEXT                        NOT NULL
+form_data           JSONB                       NULL
+file_url            TEXT                        NULL
+notes               TEXT                        NULL
+status              TEXT                        NOT NULL, DEFAULT 'Draft'
+created_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+updated_at          TIMESTAMP WITH TIME ZONE    DEFAULT NOW()
+
+Indexes:
+  - idx_ot_forms_patient_id ON (patient_id)
+  - idx_ot_forms_form_type ON (form_type)
+  - idx_ot_forms_status ON (status)
+  - idx_ot_forms_created_at ON (created_at DESC)
+
+Sample Data: None (empty table)
+
+================================================================================
+                         FOREIGN KEY RELATIONSHIPS
+================================================================================
+
+1. ward_patients.ward_id → wards.id
+   - ON DELETE: SET NULL
+   - Meaning: If a ward is deleted, patients' ward_id becomes NULL
+
+2. patient_forms.patient_id → ward_patients.id
+   - ON DELETE: CASCADE
+   - Meaning: If a patient is deleted, all their forms are deleted
+
+3. ot_forms.patient_id → ward_patients.id
+   - ON DELETE: CASCADE
+   - Meaning: If a patient is deleted, all their OT forms are deleted
+
+================================================================================
+                         ROW LEVEL SECURITY (RLS)
+================================================================================
+
+All tables have RLS ENABLED with policies that allow ALL operations.
+
+Current Policies (Development):
+  - "Enable all operations for wards"
+  - "Enable all operations for ward_patients"
+  - "Enable all operations for staff"
+  - "Enable all operations for doctors"
+  - "Enable all operations for patient_forms"
+  - "Enable all operations for ot_forms"
+
+⚠️ For production, you should implement more restrictive policies!
+
+================================================================================
+                         AUTOMATIC TRIGGERS
+================================================================================
+
+All tables have UPDATE triggers that automatically update the 'updated_at'
+timestamp whenever a record is modified.
+
+Trigger Function: update_updated_at_column()
+
+Triggers:
+  - update_wards_updated_at
+  - update_ward_patients_updated_at
+  - update_staff_updated_at
+  - update_doctors_updated_at
+  - update_patient_forms_updated_at
+  - update_ot_forms_updated_at
+
+================================================================================
+                         DATA FLOW EXAMPLE
+================================================================================
+
+1. CREATE WARD
+   wards table → New ward record created
+   
+2. ADD PATIENT
+   ward_patients table → New patient record created
+   ward_patients.ward_id → Links to wards.id
+   wards.occupied_beds → Incremented (via application logic)
+   
+3. ADD PATIENT FORM
+   patient_forms table → New form record created
+   patient_forms.patient_id → Links to ward_patients.id
+   
+4. ADD OT FORM
+   ot_forms table → New form record created
+   ot_forms.patient_id → Links to ward_patients.id
+   
+5. DISCHARGE PATIENT
+   ward_patients.status → Updated to 'Discharged'
+   ward_patients.discharge_date → Set to current timestamp
+   wards.occupied_beds → Decremented (via application logic)
+
+================================================================================
+                         STORAGE REQUIREMENTS
+================================================================================
+
+Estimated storage per record:
+
+  wards:          ~200 bytes per record
+  ward_patients:  ~400 bytes per record
+  staff:          ~300 bytes per record
+  doctors:        ~250 bytes per record
+  patient_forms:  ~500 bytes + JSONB size
+  ot_forms:       ~500 bytes + JSONB size
+
+For 1000 patients with 5 forms each:
+  - Patients: ~400 KB
+  - Forms: ~2.5 MB
+  - Total: ~3 MB (very efficient!)
+
+================================================================================
+                         PERFORMANCE NOTES
+================================================================================
+
+✅ Indexes created on:
+  - All foreign keys (for JOIN performance)
+  - Frequently filtered columns (status, department, etc.)
+  - Date columns for sorting (admission_date, created_at)
+
+✅ UUID primary keys:
+  - Globally unique
+  - No collision risk
+  - Better for distributed systems
+
+✅ JSONB for form_data:
+  - Flexible schema
+  - Queryable with GIN indexes (can be added if needed)
+  - Efficient storage
+
+================================================================================
+                         QUERY EXAMPLES
+================================================================================
+
+-- Get all patients in a specific ward
+SELECT * FROM ward_patients WHERE ward_id = 'ward-uuid-here';
+
+-- Get ward with occupancy details
+SELECT name, occupied_beds, available_beds, total_beds 
+FROM wards 
+WHERE department = 'ICU';
+
+-- Get all forms for a patient
+SELECT * FROM patient_forms WHERE patient_id = 'patient-uuid-here';
+
+-- Get active doctors by specialization
+SELECT * FROM doctors 
+WHERE status = 'Active' AND specialization = 'Cardiology';
+
+-- Get recently admitted patients
+SELECT * FROM ward_patients 
+ORDER BY admission_date DESC 
+LIMIT 10;
+
+================================================================================
+                         END OF SCHEMA DIAGRAM
+================================================================================
