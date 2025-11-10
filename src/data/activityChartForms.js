@@ -8,7 +8,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.39_cc18d12b.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.39_cc18d12b.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -18,7 +18,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.39_cf4f0b99.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.39_cf4f0b99.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -28,7 +28,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.39_fff7f678.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.39_fff7f678.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -38,7 +38,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.40_4988c01c.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.40_4988c01c.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -48,7 +48,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.40_dcf268c9.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.40_dcf268c9.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -58,7 +58,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.40_f5aa8ea8.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.40_f5aa8ea8.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -68,7 +68,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.41_404c2418.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.41_404c2418.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -78,7 +78,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.41_ed07fa7a.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.41_ed07fa7a.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -88,7 +88,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.41_fb09b9ee.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.41_fb09b9ee.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   },
@@ -98,7 +98,7 @@ export const activityChartForms = [
     category: 'Activity',
     description: 'Patient daily activity monitoring chart',
     pages: [
-      '/activity chart/WhatsApp Image 2025-10-24 at 23.51.42_e7e74d3c.jpg'
+      '/activity-chart/WhatsApp Image 2025-10-24 at 23.51.42_e7e74d3c.jpg'
     ],
     requiredRole: ['Nurse', 'Doctor']
   }
